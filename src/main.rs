@@ -1,51 +1,75 @@
-use regex::Regex;
-use reqwest;
-use reqwest::Client;
-use scraper::{Html, Selector};
+mod datastore;
+mod ceda;
+
+use crate::ceda::CedaClient;
 use std::error::Error;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let client = Client::new();
-    let root = "https://data.ceda.ac.uk";
-    let url = format!("{}{}", root, "/badc/ukmo-midas-open/data/uk-hourly-weather-obs/dataset-version-202407/");
+    let datastore = datastore::DataStore::new();
+    let client = CedaClient::new("202407")?;
+    let mut all_station_links: Vec<String> = Vec::new();
 
-    let region_links = get_region_links(&client, &url).await.unwrap();
+    let region_links = client.get_region_links().await?;
 
-    for link in region_links {
-        let url = format!("{}{}", root, link);
+    // Get the stations for each region
+    for link in region_links.iter().take(1) { // FIXME: remove .take(1) to get all regions
+        let station_links = client.get_station_links(link).await?;
+        all_station_links.extend(station_links);
     }
 
-    // print links
-    // for link in region_links {
-    //     println!("{}", link);
-    //     #content-main > div.row > div > table
-    // }
+    println!("Downloading to {:?}", datastore.root);
+
+    // Download the data for each station
+    for station_link in all_station_links.into_iter().take(1) {
+        let data_links = client.get_data_links(&station_link).await.unwrap();
+        client.download_csv(&data_links.capability, &datastore.capability_dir()).await.unwrap();
+        for link in data_links.data.iter() {
+            client.download_csv(&link, &datastore.rawdata_dir()).await.unwrap();
+        }
+    }
+
 
     Ok(())
 }
 
-// get all links to regions from the root page
-async fn get_region_links(client: &Client, root: &str) -> Result<Vec<String>, Box<dyn Error>> {
-    let res = client.get(root).send().await.unwrap();
-    if !res.status().is_success() {
-        return Err(format!("Failed to load page: {}", res.status()).into());
-    }
+// async fn download(url: &str, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
+//     let res = reqwest::get(url).await.unwrap();
+//     let body = res.bytes().await?;
+//     let filename = url.split('/').last().unwrap();
+//     std::fs::write(dir.join(filename), &body)?;
+//
+//     Ok(())
+// }
 
-    let body = res.text().await?;
-    let document = Html::parse_document(&body);
 
-    let selector = Selector::parse("#results a").unwrap();
-    let links: Vec<String> = document.select(&selector)
-        .filter_map(|element| element.value().attr("href"))
-        .map(|href| href.to_string())
-        .collect();
+// Download capabilities file
+// async fn download_capabilites(client: &Client, links: &Vec<String>) -> Result<(), Box<dyn Error>> {
+//     let capabilities_url = links.iter().find(|link| link.contains("capability")).unwrap();
+//
+//
+//     let res = client.get(capabilities_url).send().await.unwrap();
+//     if !res.status().is_success() {
+//         return Err(format!("Failed to download CSV: {}", res.status()).into());
+//     }
+//
+//     let body = res.bytes().await?;
+//     let filename = capabilities_url.split('/').last().unwrap();
+//     std::fs::write(filename, &body)?;
+//
+//
+//     Ok(())
+// }
 
-    // remove all links that don't start with /badc
-    let re = Regex::new(r"^/badc").unwrap();
-    let links: Vec<String> = links.into_iter().filter(|link| re.is_match(link)).collect();
-
-    Ok(links)
-}
-
+// Download data file
+// async fn download_data(client: &Client, links: &Vec<String>) -> Result<(), Box<dyn Error>> {
+//     for link in links.iter().filter(|link| link.contains("data")) {
+//         let res = client.get(link).send().await.unwrap();
+//         let body = res.text().await?;
+//         let filename = link.split("/").last().unwrap();
+//         std::fs::write(filename, body)?;
+//     }
+//
+//     Ok(())
+// }
 
