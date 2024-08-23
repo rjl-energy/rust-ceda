@@ -12,16 +12,8 @@ use std::path::Path;
 pub struct DataLinks {
     pub capability: String,
     pub data: Vec<String>,
-    pub qc_version: QCVersion,
 }
 
-/// Represents the QC version of the data
-#[derive(Debug, PartialEq)]
-pub enum QCVersion {
-    V0,
-    V1,
-    Unknown,
-}
 
 /// Represents the CEDA client
 pub struct CedaClient {
@@ -112,22 +104,19 @@ impl CedaClient {
         let capability = links.iter().find(|link| link.contains("capability.csv")).unwrap().to_string();
 
         // Parse the data file links
-        let (data, qc_version) = self.parse_data_links(&links).await?;
+        let data = self.parse_data_links(&links).await?;
 
-        Ok(DataLinks { capability, data, qc_version })
+        Ok(DataLinks { capability, data })
     }
 
     // Parse a station page data links to get the data files
-    async fn parse_data_links(&self, links: &[String]) -> Result<(Vec<String>, QCVersion), Box<dyn Error>> {
+    async fn parse_data_links(&self, links: &[String]) -> Result<Vec<String>, Box<dyn Error>> {
         let mut data_link = String::new();
-        let mut version = QCVersion::Unknown;
 
         if let Some(link) = links.iter().find(|link| link.contains("qc-version-1")) {
             data_link = link.clone();
-            version = QCVersion::V1;
         } else if let Some(link) = links.iter().find(|link| link.contains("qc-version-0")) {
             data_link = link.clone();
-            version = QCVersion::V0;
         }
 
         if data_link.is_empty() {
@@ -139,7 +128,7 @@ impl CedaClient {
 
         let data: Vec<String> = self.parse_datafile_links(&data_link).await?;
 
-        Ok((data, version))
+        Ok(data)
     }
 
     /// Parse the data file links for a given QC version link
@@ -241,7 +230,6 @@ mod tests {
 
         let data_links = client.get_data_links(data_link).await.unwrap();
 
-        assert_eq!(data_links.qc_version, QCVersion::V1);
         assert!(!data_links.data.is_empty());
     }
 }

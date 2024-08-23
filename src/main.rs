@@ -25,51 +25,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let data_links = client.get_data_links(&station_link).await.unwrap();
         client.download_csv(&data_links.capability, &datastore.capability_dir()).await.unwrap();
         for link in data_links.data.iter() {
-            client.download_csv(&link, &datastore.rawdata_dir()).await.unwrap();
+            client.download_csv(link, &datastore.rawdata_dir()).await.unwrap();
         }
     }
 
-
     Ok(())
 }
-
-// async fn download(url: &str, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
-//     let res = reqwest::get(url).await.unwrap();
-//     let body = res.bytes().await?;
-//     let filename = url.split('/').last().unwrap();
-//     std::fs::write(dir.join(filename), &body)?;
-//
-//     Ok(())
-// }
-
-
-// Download capabilities file
-// async fn download_capabilites(client: &Client, links: &Vec<String>) -> Result<(), Box<dyn Error>> {
-//     let capabilities_url = links.iter().find(|link| link.contains("capability")).unwrap();
-//
-//
-//     let res = client.get(capabilities_url).send().await.unwrap();
-//     if !res.status().is_success() {
-//         return Err(format!("Failed to download CSV: {}", res.status()).into());
-//     }
-//
-//     let body = res.bytes().await?;
-//     let filename = capabilities_url.split('/').last().unwrap();
-//     std::fs::write(filename, &body)?;
-//
-//
-//     Ok(())
-// }
-
-// Download data file
-// async fn download_data(client: &Client, links: &Vec<String>) -> Result<(), Box<dyn Error>> {
-//     for link in links.iter().filter(|link| link.contains("data")) {
-//         let res = client.get(link).send().await.unwrap();
-//         let body = res.text().await?;
-//         let filename = link.split("/").last().unwrap();
-//         std::fs::write(filename, body)?;
-//     }
-//
-//     Ok(())
-// }
 
