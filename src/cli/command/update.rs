@@ -30,3 +30,4 @@ pub async fn update() -> Result<(), Error> {
 
     Ok(())
 }
+
