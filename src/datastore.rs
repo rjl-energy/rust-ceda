@@ -1,5 +1,6 @@
 //! Manages the data store for the application.
 
+use std::env;
 use std::path::PathBuf;
 
 /// Represents a datastore in the file system to assist in managing data files
@@ -10,8 +11,7 @@ pub struct DataStore {
 impl DataStore {
     /// Create a new instance of the data store
     pub fn new() -> Self {
-        let mut root = dirs_next::data_dir().unwrap();
-        root = root.join("CEDA");
+        let root = DataStore::get_data_dir();
         Self { root }
     }
 
@@ -47,16 +47,22 @@ impl DataStore {
 
         datafiles
     }
+
+    pub fn get_data_dir() -> PathBuf {
+        dotenv::dotenv().ok();
+        env::var("DATA_DIR").expect("DATA_DIR must be set").into()
+    }
 }
 
 /// Represents the properties of a data file, obtqined from the filename
 #[derive(Debug)]
 pub struct FileProperties {
     pub path: PathBuf,
-    pub description: String,
+    pub collection_name: String,
+    pub title: String,
     pub updated: String,
-    pub region_name: String,
-    pub region_id: u32,
+    pub county_name: String,
+    pub station_id: u32,
     pub station_name: String,
     pub qcv: String,
     pub year: u32,
@@ -67,15 +73,16 @@ impl FileProperties {
     pub fn new(path: PathBuf) -> Self {
         let filename = path.file_name().unwrap().to_str().unwrap();
         let parts: Vec<&str> = filename.split('_').collect();
-        let description = parts[1].to_string();
+        let collection_name = parts[0].to_string();
+        let title = parts[1].to_string();
         let updated = parts[2].to_string();
-        let region_name = parts[3].to_string();
-        let region_id: u32 = parts[4].parse().unwrap();
+        let county_name = parts[3].to_string();
+        let station_id: u32 = parts[4].parse().unwrap();
         let station_name = parts[5].to_string();
         let qcv = parts[6].to_string();
         let year: u32 = parts[7].split('.').next().unwrap().parse().unwrap();
 
-        Self { path, description, updated, region_name, region_id, station_name, qcv, year }
+        Self { path, collection_name, title, updated, county_name, station_id, station_name, qcv, year }
     }
 }
 
@@ -96,10 +103,11 @@ mod tests {
         let data_file = FileProperties::new(PathBuf::from(file_path));
 
         assert_eq!(data_file.path.to_string_lossy(), file_path);
-        assert_eq!(data_file.description, "uk-hourly-weather-obs");
+        assert_eq!(data_file.collection_name, "midas-open");
+        assert_eq!(data_file.title, "uk-hourly-weather-obs");
         assert_eq!(data_file.updated, "dv-202407");
-        assert_eq!(data_file.region_name, "aberdeenshire");
-        assert_eq!(data_file.region_id, 144);
+        assert_eq!(data_file.county_name, "aberdeenshire");
+        assert_eq!(data_file.station_id, 144);
         assert_eq!(data_file.station_name, "corgarff-castle-lodge");
         assert_eq!(data_file.qcv, "qcv-1");
         assert_eq!(data_file.year, 1997);
