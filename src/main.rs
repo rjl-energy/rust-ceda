@@ -2,7 +2,8 @@ mod datastore;
 mod ceda;
 mod cli;
 mod error;
-mod data_csv;
+mod ceda_csv_reader;
+mod db;
 
 use crate::cli::{command, Cli, Commands};
 use clap::Parser;
@@ -14,7 +15,7 @@ async fn main() -> Result<(), Error> {
 
     match &cli.command {
         Commands::Update {} => command::update().await,
-        Commands::Process {} => command::process().await,
+        Commands::Process { init } => command::process(*init).await,
     }
 }
 

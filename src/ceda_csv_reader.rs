@@ -9,8 +9,13 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 /// Represents a reader for processing CEDA weather data CSV files.
+#[derive(Debug)]
 pub struct CedaCsvReader {
+    pub midas_station_id: u32,
+    pub historic_county_name: String,
+    pub observation_station: String,
     pub location: Location,
+    pub height: u32,
     pub date_valid: DateValid,
     pub observations: Vec<Observation>,
 }
@@ -41,8 +46,8 @@ pub struct Observation {
 /// A wind observation.
 #[derive(Debug, Default, PartialEq)]
 pub struct WindObservation {
-    pub wind_speed: Option<f32>,
-    pub wind_direction: Option<f32>,
+    pub speed: Option<f32>,
+    pub direction: Option<f32>,
     pub unit_id: Option<u32>,
     pub opr_type: Option<u32>,
 }
@@ -54,16 +59,61 @@ impl CedaCsvReader {
         let reader = BufReader::new(file);
         let lines = reader.lines().collect::<Result<Vec<String>, _>>().map_err(|_| Error::FileReadError)?;
 
+        let midas_station_id = CedaCsvReader::parse_midas_station_id(&lines)?;
+        let historic_county_name = CedaCsvReader::parse_historic_county_name(&lines)?;
+        let observation_station = CedaCsvReader::parse_observation_station(&lines)?;
         let location = CedaCsvReader::parse_location(&lines)?;
+        let height = CedaCsvReader::parse_height(&lines)?;
         let date_valid = CedaCsvReader::parse_date_valid(&lines)?;
         let observations = CedaCsvReader::parse_observations(&lines)?;
 
         Ok(Self {
+            midas_station_id,
+            historic_county_name,
+            observation_station,
             location,
+            height,
             date_valid,
             observations,
         })
     }
+
+    fn parse_observation_station(lines: &[String]) -> Result<String, Error> {
+        let parts: Vec<String> = lines[10].split(',').map(|s| s.to_string()).collect();
+
+        if parts[0] != "observation_station" {
+            return Err(Error::CsvObservationStationParsingError);
+        }
+
+        let observation_station = parts[2].clone();
+
+        Ok(observation_station)
+    }
+
+    fn parse_historic_county_name(lines: &[String]) -> Result<String, Error> {
+        let parts: Vec<String> = lines[11].split(',').map(|s| s.to_string()).collect();
+
+        if parts[0] != "historic_county_name" {
+            return Err(Error::CsvHistoricCountyNameParsingError);
+        }
+
+        let historic_county_name = parts[2].clone();
+
+        Ok(historic_county_name)
+    }
+
+    fn parse_midas_station_id(lines: &[String]) -> Result<u32, Error> {
+        let parts: Vec<String> = lines[13].split(',').map(|s| s.to_string()).collect();
+
+        if parts[0] != "midas_station_id" {
+            return Err(Error::CsvHeightParsingError);
+        }
+
+        let midas_station_id = parts[2].parse::<u32>().map_err(|_| Error::CsvMidasStationIdParsingError)?;
+
+        Ok(midas_station_id)
+    }
+
 
     fn parse_location(lines: &[String]) -> Result<Location, Error> {
         let parts: Vec<String> = lines[14].split(',').map(|s| s.to_string()).collect();
@@ -76,6 +126,18 @@ impl CedaCsvReader {
         let lon = parts[3].parse::<f32>()?;
 
         Ok(Location { lat, lon })
+    }
+
+    fn parse_height(lines: &[String]) -> Result<u32, Error> {
+        let parts: Vec<String> = lines[15].split(',').map(|s| s.to_string()).collect();
+
+        if parts[0] != "height" {
+            return Err(Error::CsvHeightParsingError);
+        }
+
+        let height = parts[2].parse::<u32>().map_err(|_| Error::CsvHeightParsingError)?;
+
+        Ok(height)
     }
 
     fn parse_date_valid(lines: &[String]) -> Result<DateValid, Error> {
@@ -139,13 +201,12 @@ impl CedaCsvReader {
         let wind_speed_unit_id = record[wind_speed_unit_id_index].parse::<u32>().ok();
         let src_opr_type = record[src_opr_type_index].parse::<u32>().ok();
 
-        let wind = WindObservation {
-            wind_speed,
-            wind_direction,
+        WindObservation {
+            speed: wind_speed,
+            direction: wind_direction,
             unit_id: wind_speed_unit_id,
             opr_type: src_opr_type,
-        };
-        wind
+        }
     }
 
     // Convert a vector of strings to a CSV string
@@ -200,6 +261,38 @@ mod test {
     }
 
     #[test]
+    fn it_gets_historic_county_name() {
+        let file_path = get_test_file_path();
+        let reader = CedaCsvReader::new(file_path).unwrap();
+
+        assert_eq!(reader.historic_county_name, "antrim");
+    }
+
+    #[test]
+    fn it_gets_observation_station() {
+        let file_path = get_test_file_path();
+        let reader = CedaCsvReader::new(file_path).unwrap();
+
+        assert_eq!(reader.observation_station, "portglenone");
+    }
+
+    #[test]
+    fn it_gets_midas_station_id() {
+        let file_path = get_test_file_path();
+        let reader = CedaCsvReader::new(file_path).unwrap();
+
+        assert_eq!(reader.midas_station_id, 1448);
+    }
+
+    #[test]
+    fn it_gets_height() {
+        let file_path = get_test_file_path();
+        let reader = CedaCsvReader::new(file_path).unwrap();
+
+        assert_eq!(reader.height, 64);
+    }
+
+    #[test]
     fn it_gets_location() {
         let file_path = get_test_file_path();
         let reader = CedaCsvReader::new(file_path).unwrap();
@@ -236,8 +329,8 @@ mod test {
         let observation = &reader.observations[2];
 
         let expected_wind = WindObservation {
-            wind_speed: Some(4.0),
-            wind_direction: Some(170.0),
+            speed: Some(4.0),
+            direction: Some(170.0),
             unit_id: None,
             opr_type: None,
         };

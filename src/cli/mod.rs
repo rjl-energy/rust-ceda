@@ -16,5 +16,9 @@ pub enum Commands {
     /// Update datafiles
     Update {},
     /// Process datafiles
-    Process {},
+    Process {
+        #[arg(short, long, default_value_t = false)]
+        /// Initialise the database WARNING: This will delete all data and cannot be undone
+        init: bool,
+    },
 }

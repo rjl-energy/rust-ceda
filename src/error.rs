@@ -14,6 +14,14 @@ pub enum AppError {
     FileReadError,
 
     // CSV Parse Errors
+    #[error("CSV Observation Station parsing error")]
+    CsvObservationStationParsingError,
+    #[error("CSV Historic County Name parsing error")]
+    CsvHistoricCountyNameParsingError,
+    #[error("CSV Midas Station ID parsing error")]
+    CsvMidasStationIdParsingError,
+    #[error("CSV Height parsing error")]
+    CsvHeightParsingError,
     #[error("CSV Location field error")]
     CsvLocationMissingError,
     #[error("CSV Location parse error")]
@@ -28,4 +36,9 @@ pub enum AppError {
     CsvParseReadingIdError,
     #[error("CSV Reading Column not found: {0}")]
     ColumnNotFound(String),
+
+    // Database errors
+    #[error("Database connection error")]
+    DatabaseConnectionError(#[from] sqlx::Error),
+
 }

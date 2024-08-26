@@ -35,8 +35,18 @@ impl DataStore {
         dir_path
     }
 
+    /// Path to where the database is stored
+    pub fn db_dir(&self) -> PathBuf {
+        let dir_path = self.root.join("db");
+        if !dir_path.exists() {
+            std::fs::create_dir_all(&dir_path).unwrap();
+        }
+
+        dir_path
+    }
+
     /// Get a list of the data file properties
-    pub fn get_file_properties(&self) -> Vec<FileProperties> {
+    pub fn list_data_files(&self) -> Vec<FileProperties> {
         let mut datafiles = Vec::new();
         let dir_path = self.rawdata_dir();
 
