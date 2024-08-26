@@ -47,8 +47,7 @@ pub async fn update() -> Result<(), Error> {
     // Download the data files
     let pb = create_progress_bar(datalinks_count as u64, "Downloading data files...".to_string());
     let mut tasks = Vec::new();
-
-
+    
     for data_links in all_data_links.iter() {
         let client = client.clone();
         let capability_dir = datastore.capability_dir();

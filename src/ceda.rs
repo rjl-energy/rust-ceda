@@ -1,11 +1,16 @@
 //! Represents the CEDA website and provides methods to interact with it.
 
+use futures::stream::StreamExt;
 use regex::Regex;
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use scraper::{Html, Selector};
 use std::env;
 use std::error::Error;
 use std::path::Path;
+use tokio::fs::File;
+use tokio::io::copy;
+use tokio::io::AsyncWriteExt;
+use tokio_util::io::StreamReader;
 
 /// Represents the links to the data files
 #[derive(Debug, Clone)]
@@ -154,14 +159,7 @@ impl CedaClient {
             return Err(format!("Failed to download CSV: {}", res.status()).into());
         }
 
-        let body = res.bytes().await?;
-
         let filename = url.split('/').last().unwrap();
-
-        // skip if file already exists
-        if dir.join(filename).exists() {
-            return Ok(());
-        }
 
         // remove all after '.csv'
         let filename = match filename.find(".csv") {
@@ -169,7 +167,17 @@ impl CedaClient {
             None => filename,
         };
 
-        tokio::fs::write(dir.join(filename), &body).await?;
+        // skip if file already exists
+        if dir.join(filename).exists() {
+            return Ok(());
+        }
+
+        let file_path = dir.join(filename);
+        let mut file = File::create(&file_path).await?;
+        let stream = res.bytes_stream().map(|result| result.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e)));
+        let mut stream_reader = StreamReader::new(stream);
+
+        copy(&mut stream_reader, &mut file).await?;
 
         Ok(())
     }
