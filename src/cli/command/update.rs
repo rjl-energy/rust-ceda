@@ -45,7 +45,7 @@ pub async fn update() -> Result<(), Error> {
 }
 
 
-pub fn create_spinner(message: String) -> ProgressBar {
+pub fn _create_spinner(message: String) -> ProgressBar {
     let bar = ProgressBar::new_spinner().with_message(message);
     bar.enable_steady_tick(Duration::from_millis(100));
 

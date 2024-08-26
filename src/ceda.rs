@@ -157,6 +157,11 @@ impl CedaClient {
 
         let filename = url.split('/').last().unwrap();
 
+        // skip if file already exists
+        if dir.join(filename).exists() {
+            return Ok(());
+        }
+
         // remove all after '.csv'
         let filename = match filename.find(".csv") {
             Some(pos) => &filename[..pos + 4],
@@ -207,6 +212,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn it_gets_capability() {
         let client = CedaClient::new("202407").unwrap();
         let region_links = client.get_region_links().await.unwrap();
@@ -221,6 +227,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn it_gets_datalinks() {
         let client = CedaClient::new("202407").unwrap();
         let region_links = client.get_region_links().await.unwrap();

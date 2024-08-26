@@ -2,6 +2,7 @@ mod datastore;
 mod ceda;
 mod cli;
 mod error;
+mod data_csv;
 
 use crate::cli::{command, Cli, Commands};
 use clap::Parser;
