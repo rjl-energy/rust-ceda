@@ -7,6 +7,11 @@ use thiserror::Error;
 pub enum AppError {
     #[error("A generic error occurred")]
     GenericError,
+
+    // CEDA API errors
+    #[error("Document Fetch error: {0}")]
+    DocumentFetchError(String),
+
     // File errors
     #[error("File not found")]
     FileNotFound,
@@ -30,12 +35,10 @@ pub enum AppError {
     CsvDateValidMissingError,
     #[error("CSV Date Parse error: {0}")]
     CsvDateParseError(#[from] chrono::ParseError),
-    #[error("CSV Reading parse missing header error ")]
-    CsvParseReadingMissingHeaderError,
-    #[error("CSV Reading parse missing id error")]
-    CsvParseReadingIdError,
     #[error("CSV Reading Column not found: {0}")]
     ColumnNotFound(String),
+    #[error("CSV Reading QCV1 Folder Not Found error")]
+    QCV1NotFound,
 
     // Database errors
     #[error("Database connection error")]

@@ -26,8 +26,9 @@ pub async fn process(init: bool) -> Result<(), Error> {
             &record.observation_station,
             record.location.lat,
             record.location.lon,
-            record.height)
-            .await?;
+            record.height,
+        )
+        .await?;
 
         for observation in record.observations {
             db.insert_observation(
@@ -36,11 +37,11 @@ pub async fn process(init: bool) -> Result<(), Error> {
                 observation.wind.speed,
                 observation.wind.direction,
                 observation.wind.unit_id,
-                observation.wind.opr_type)
-                .await?;
+                observation.wind.opr_type,
+            )
+            .await?;
         }
     }
 
     Ok(())
 }
-

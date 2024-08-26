@@ -24,7 +24,6 @@ impl Database {
             .connect(database_url.as_str())
             .await?;
 
-
         Ok(Self { pool })
     }
 
@@ -36,10 +35,10 @@ impl Database {
         DROP TABLE IF EXISTS stations;
         DROP TABLE IF EXISTS observations;
         PRAGMA foreign_keys = ON;
-        "#
+        "#,
         )
-            .execute(&self.pool)
-            .await?;
+        .execute(&self.pool)
+        .await?;
 
         // Create tables if they do not exist
         sqlx::query(
@@ -63,15 +62,23 @@ impl Database {
             wind_opr_type INTEGER,
             FOREIGN KEY (midas_station_id) REFERENCES stations (midas_station_id)
         );
-        "#
+        "#,
         )
-            .execute(&self.pool)
-            .await?;
+        .execute(&self.pool)
+        .await?;
 
         Ok(())
     }
 
-    pub async fn insert_station(&self, midas_station_id: u32, historic_county_name: &str, observation_station: &str, lat: f32, lon: f32, height: u32) -> Result<i64, Error> {
+    pub async fn insert_station(
+        &self,
+        midas_station_id: u32,
+        historic_county_name: &str,
+        observation_station: &str,
+        lat: f32,
+        lon: f32,
+        height: u32,
+    ) -> Result<i64, Error> {
         let result = sqlx::query(
             r#"
         INSERT INTO stations (midas_station_id, historic_county_name, observation_station, lat, lon, height)
@@ -91,9 +98,16 @@ impl Database {
         Ok(result.last_insert_rowid())
     }
 
-    pub async fn insert_observation(&self, midas_station_id: u32, date_time: NaiveDateTime, wind_speed: Option<f32>, wind_direction: Option<f32>, wind_unit_id: Option<u32>, wind_opr_type: Option<u32>) -> Result<i64, sqlx::Error> {
+    pub async fn insert_observation(
+        &self,
+        midas_station_id: u32,
+        date_time: NaiveDateTime,
+        wind_speed: Option<f32>,
+        wind_direction: Option<f32>,
+        wind_unit_id: Option<u32>,
+        wind_opr_type: Option<u32>,
+    ) -> Result<i64, sqlx::Error> {
         let date_time_str = date_time.format("%Y-%m-%d %H:%M:%S").to_string();
-
 
         let result = sqlx::query(
             r#"
@@ -114,7 +128,6 @@ impl Database {
         Ok(result.last_insert_rowid())
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -152,10 +165,13 @@ mod tests {
     #[ignore]
     async fn test_insert_observation() {
         let db = Database::new().await.unwrap();
-        let datetime = NaiveDateTime::parse_from_str("2021-01-01 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        let datetime =
+            NaiveDateTime::parse_from_str("2021-01-01 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
         let _ = db.init().await;
         let _ = db.insert_station(1, "Dublin", "DUB", 10.0, 180.0, 1).await;
-        let result = db.insert_observation(1, datetime, Some(10.0), Some(180.0), Some(1), Some(1)).await;
+        let result = db
+            .insert_observation(1, datetime, Some(10.0), Some(180.0), Some(1), Some(1))
+            .await;
 
         println!("{:?}", result);
 
