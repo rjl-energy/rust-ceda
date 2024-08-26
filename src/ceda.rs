@@ -9,7 +9,6 @@ use std::error::Error;
 use std::path::Path;
 use tokio::fs::File;
 use tokio::io::copy;
-use tokio::io::AsyncWriteExt;
 use tokio_util::io::StreamReader;
 
 /// Represents the links to the data files
