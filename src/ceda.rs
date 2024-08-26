@@ -8,7 +8,7 @@ use std::error::Error;
 use std::path::Path;
 
 /// Represents the links to the data files
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataLinks {
     pub capability: String,
     pub data: Vec<String>,
@@ -16,6 +16,7 @@ pub struct DataLinks {
 
 
 /// Represents the CEDA client
+#[derive(Debug, Clone)]
 pub struct CedaClient {
     dataset_version: String,
     client: reqwest::Client,
@@ -57,7 +58,7 @@ impl CedaClient {
     }
 
     /// Get all links to regions from the root page
-    pub async fn get_region_links(&self) -> Result<Vec<String>, Box<dyn Error>> {
+    pub async fn get_county_links(&self) -> Result<Vec<String>, Box<dyn Error>> {
         let url = format!("{}{}{}/", self.root, "/badc/ukmo-midas-open/data/uk-hourly-weather-obs/dataset-version-", self.dataset_version);
         let document = self.get_document(&url).await.unwrap();
         let selector = Selector::parse("#results a").unwrap();
@@ -194,7 +195,7 @@ mod tests {
     async fn it_gets_region_links() {
         let client = CedaClient::new("202407").unwrap();
 
-        let links = client.get_region_links().await.unwrap();
+        let links = client.get_county_links().await.unwrap();
 
         assert!(!links.is_empty());
     }
@@ -203,7 +204,7 @@ mod tests {
     #[ignore]
     async fn it_gets_station_links() {
         let client = CedaClient::new("202407").unwrap();
-        let region_links = client.get_region_links().await.unwrap();
+        let region_links = client.get_county_links().await.unwrap();
         let station_link = region_links.iter().take(1).next().unwrap();
 
         let station_links = client.get_station_links(station_link).await.unwrap();
@@ -215,7 +216,7 @@ mod tests {
     #[ignore]
     async fn it_gets_capability() {
         let client = CedaClient::new("202407").unwrap();
-        let region_links = client.get_region_links().await.unwrap();
+        let region_links = client.get_county_links().await.unwrap();
         let station_link = region_links.iter().take(1).next().unwrap();
         let station_links = client.get_station_links(station_link).await.unwrap();
         let data_link = station_links.iter().take(1).next().unwrap();
@@ -230,7 +231,7 @@ mod tests {
     #[ignore]
     async fn it_gets_datalinks() {
         let client = CedaClient::new("202407").unwrap();
-        let region_links = client.get_region_links().await.unwrap();
+        let region_links = client.get_county_links().await.unwrap();
         let station_link = region_links.iter().take(1).next().unwrap();
         let station_links = client.get_station_links(station_link).await.unwrap();
         let data_link = station_links.iter().take(1).next().unwrap();
