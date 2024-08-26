@@ -169,7 +169,7 @@ impl CedaClient {
             None => filename,
         };
 
-        std::fs::write(dir.join(filename), &body)?;
+        tokio::fs::write(dir.join(filename), &body).await?;
 
         Ok(())
     }
